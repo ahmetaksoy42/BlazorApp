@@ -1,0 +1,282 @@
+﻿@page "/veriler/edit/{id:int}"
+@page "/veriler/{isReadOnly:bool}/{id:int}"
+@page "/veriler/new"
+@inject HttpClient Http
+@inject NavigationManager navigationManager;
+@inject IProsesKontrolService prosesKontrolService
+@inject IImageService imageService;
+@inject IProsesService prosesService;
+@inject IJSRuntime JsRuntime
+@using Syncfusion.Blazor.Buttons
+@using System.Net.Http.Headers
+@using Syncfusion.Blazor.DropDowns
+
+@if (Id == null)
+{
+    <h3>Yeni Veri Oluştur</h3>
+}
+else
+{
+    <h3>Düzenle @prosesKontrolModel.HataTipi</h3>
+}
+<section class="">
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-6">
+                <EditForm Model="prosesKontrolModel" OnValidSubmit="HandleSubmit">
+
+                    <SfComboBox Readonly=@isReadOnly TItem="ProsesModel" @bind-Value="@prosesKontrolModel.ProsesModelId" TValue="int?" Placeholder="Proses Seç"
+                                DataSource="@prosesModels" FloatLabelType="FloatLabelType.Always"
+                                AllowCustom="false" Required="true">
+                        <ComboBoxFieldSettings Text="Isim" Value="Id" />
+                    </SfComboBox>
+                    <p />
+
+                    <SfTextBox Readonly=@isReadOnly CssClass="e-outline" Placeholder="Hata Tipi"
+                               FloatLabelType="@FloatLabelType.Auto"
+                    @bind-Value="prosesKontrolModel.HataTipi" />
+                    <p/>
+                    <SfTextBox Readonly=@isReadOnly CssClass="e-outline" Placeholder="Standart(Referans Noktasi)"
+                               FloatLabelType="@FloatLabelType.Auto"
+                    @bind-Value="prosesKontrolModel.Standart" />
+                    <p />
+
+                    <SfTextBox Readonly=@isReadOnly CssClass="e-outline" Placeholder="Kontrol Metodu"
+                               FloatLabelType="@FloatLabelType.Auto"
+                    @bind-Value="prosesKontrolModel.KontrolMetodu" />
+                    <p />
+
+                    <div class="d-flex align-items-center" style="margin-left:-22px;">
+                        <div style="margin-top:20px;">
+
+                            <SfCheckBox Disabled=@isReadOnly @bind-Checked="prosesKontrolModel.Operator" />
+                        </div>
+                        <div class="col-6">
+
+                            <SfTextBox Readonly=@isReadOnly CssClass="e-outline" Placeholder="Operator"
+                                       FloatLabelType="@FloatLabelType.Auto"
+                            @bind-Value="prosesKontrolModel.OperatorKontrol" />
+                        </div>
+                    </div>
+                    <p />
+
+                    <div class="d-flex align-items-center" style="margin-left:-22px;">
+                        <div style="margin-top:20px;">
+                            <SfCheckBox Disabled=@isReadOnly @bind-Checked="prosesKontrolModel.ProsesKontrolSorumlusu" />
+
+                        </div>
+                        <div class="col-6">
+
+                            <SfTextBox Readonly=@isReadOnly CssClass="e-outline" Placeholder="Proses Kontrol Sorumlusu"
+                                       FloatLabelType="@FloatLabelType.Auto"
+                            @bind-Value="prosesKontrolModel.ProsesSorumlusuKontrol" />
+                        </div>
+                    </div>
+                    <hr />
+                    <SfButton hidden=@isReadOnly CssClass="e-success" IconCss="e-icons e-save" Content="Kaydet" istype="submit" />
+                </EditForm>
+            </div>
+            <div class="col-lg-6 ">
+                @foreach (var item in filesBase64)
+                {
+                    <div style="margin:10px; margin-left:97px;">
+                        <img src="data:@item.contentType;base64,@item.base64data" style="max-height:300px;max-width:300px;height:auto; width:auto;" />
+                    </div>
+                }
+                <div style="">
+                    @foreach (var item in dict)
+                    {
+                        <div style="margin:10px">
+                            <SfButton hidden=@isReadOnly style="margin-right:10px;" CssClass="e-danger" Content="Resmi Sil" istype="delete" OnClick="@(()=>ShowDeleteMessage(Id.Value,item.Key) )" />
+                            <img src="data:contentType; base64,@item.Value" style="max-height:300px;max-width:300px; height:auto; width:auto;" />
+                        </div>
+                    }
+                </div>
+                <div style="position: fixed; top: 80px; right:-40px;">
+                    <InputFile OnChange="@OnChange" hidden=@isReadOnly multiple accept="image/*"></InputFile>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+    [Parameter]
+    public bool isReadOnly { get; set; }
+    public ProsesKontrolModel prosesKontrolModel { get; set; } = new ProsesKontrolModel();
+    public List<ProsesModel> prosesModels { get; set; } = new List<ProsesModel>();
+    public int selectedProsesModel { get; set; }
+    //Image
+    public ImageModel imageModel { get; set; } = new();
+    public List<ImageModel> imageModels { get; set; } = new();
+    //public List<string> base64 { get; set; } = new(); // fonksiyon foreach de dönülmediği için ekledim ve buna eşitledim.
+    //public List<string> imageNames { get; set; } = new();
+    string imagePath = @"C:/Users/EXCALIBUR/source/repos/ProsesKontrolWeb/ProsesKontrolWeb/Server/images/";
+    Dictionary<string, string> dict = new();
+    public int tableInsideId;
+    List<string> fileNames = new();
+    List<ImageModel> uploadResults = new();
+    List<string> base64Images;
+    List<string> contentTypes;
+    List<ImageFile> filesBase64 = new List<ImageFile>();
+    MultipartFormDataContent content = new();//kaydetme için globale çevirdim
+
+    protected override async Task OnInitializedAsync()
+    {
+        prosesModels = await prosesService.GetAllProsesModels();
+
+        if (Id == null)
+        {
+            navigationManager.NavigateTo("veriler/new");
+        }
+        else
+        {
+            prosesKontrolModel = await prosesKontrolService.GetProsesById(Id.Value);
+
+            dict = await imageService.GetImageById(1, Id.Value);
+        }
+    }
+    protected override async Task OnParametersSetAsync()
+    {
+        //await GetThumbnail(1, tempId);
+    }
+    public async void GetProsesNames()
+    {
+        prosesModels = await prosesService.GetAllProsesModels();
+    }
+    public async void DeleteImage(int id, string name)
+    {
+        imageService.DeleteImageByIdAndName(1, id, name);
+        //imageService.GetImageById(id);
+
+        //var response = await Http.DeleteAsync($"api/Image/Delete/{id}/{name}");
+    }
+    public async void ShowDeleteMessage(int id, string name)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Bu resmi silmek istediğinize emin misiniz ?"); // Confirm
+
+        if (confirmed)
+        {
+            DeleteImage(id, name);
+
+        }
+    }
+    public async void HandleSubmit()
+    {
+        if (Id == null)
+        {
+            var proses = await prosesKontrolService.AddProses(prosesKontrolModel);
+            tableInsideId = proses.Id;
+            var b = prosesKontrolModel.ProsesModelId;
+
+            foreach (var imageFile in filesBase64)
+            {
+                imageFile.tableInsideId = proses.Id;
+            }
+            // tableInsideIds.Add(proses.Id);
+            //await imageService.AddImage(imageModel);
+            //imageService.AddImage(filesBase64);
+        }
+        else
+        {
+            await prosesKontrolService.UpdateProses(prosesKontrolModel);
+            var a = prosesKontrolModel.ProsesModelId;
+            //await imageService.GetImageById(Id.Value);
+            foreach (var imageFile in filesBase64)
+            {
+                imageFile.tableInsideId = Id.Value;
+            }
+        }
+        imageService.AddImage(filesBase64);
+        navigationManager.NavigateTo("veriler");
+
+
+    }
+    //---- IMAGE ----
+    async Task OnChange(InputFileChangeEventArgs e)
+    {
+        if (isReadOnly)
+        {
+            return;
+        }
+        var files = e.GetMultipleFiles();
+        double maxWidth = 1000;
+        double maxHeight = 1000;
+        double oran;
+        double idealHeight = 800;
+        double idealWidth = 600;
+        foreach (var file in files)
+        {
+            var stream = file.OpenReadStream();
+
+            var image = await Image.LoadAsync(stream);
+
+            var width = image.Width;
+            var height = image.Height;
+
+            if (width > maxWidth || height > maxHeight)
+            {
+
+                if (height > width)
+                {
+                    oran = Convert.ToDouble(maxHeight / height);
+                    idealHeight = maxHeight;
+                    idealWidth = (width * oran);
+                }
+                else
+                {
+                    oran = Convert.ToDouble((maxWidth / width));
+                    idealWidth = maxWidth;
+                    idealHeight = (height * oran);
+                }
+            }
+            stream.Close();
+
+            var resizedFile = await file.RequestImageFileAsync(file.ContentType, Convert.ToInt32(idealWidth), Convert.ToInt32(idealHeight)); // resize the image file
+                                                                                                                                             //file.Size.
+            var buf = new byte[resizedFile.Size]; // allocate a buffer to fill with the file's data
+            using (var stream2 = resizedFile.OpenReadStream())
+            {
+                await stream2.ReadAsync(buf); // copy the stream to the buffer
+            }
+
+            var fileContent = new StreamContent(file.OpenReadStream());
+            filesBase64.Add(new ImageFile { base64data = Convert.ToBase64String(buf), contentType = file.ContentType, fileName = file.Name }); // convert to a base64 string!!
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+            fileNames.Add(file.Name);
+            content.Add(content: fileContent, name: "\"files\"", fileName: file.Name);
+        }
+    }
+    private Size ImageResize2(double width, double height, double maxW, double maxH)
+    {
+        double oran;
+        double idealHeight, idealWidth;
+        if (height > width)
+        {
+            oran = Convert.ToDouble(maxH / height);
+            idealHeight = maxH;
+            idealWidth = (int)(width * oran);
+        }
+        else
+        {
+            oran = Convert.ToDouble((maxW / width));
+            idealWidth = maxW;
+            idealHeight = (int)(height * oran);
+        }
+        return new Size(Convert.ToInt32(idealWidth), Convert.ToInt32(idealHeight));
+    }
+    async Task Upload()
+    {
+        using (var msg = await Http.PostAsJsonAsync<List<ImageFile>>("/api/Image", filesBase64, System.Threading.CancellationToken.None))
+        {
+            if (msg.IsSuccessStatusCode)
+            {
+                filesBase64.Clear();
+            }
+        }
+    }
+}

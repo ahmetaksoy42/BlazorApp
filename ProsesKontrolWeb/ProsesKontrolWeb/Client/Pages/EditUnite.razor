@@ -1,0 +1,62 @@
+﻿@page "/uniteler/new"
+@page "/uniteler/edit/{id:int}"
+@page "/uniteler/{isReadOnly:bool}/{id:int}"
+@inject HttpClient Http
+@inject NavigationManager navigationManager;
+@inject IProsesService prosesService;
+@inject IUniteService uniteService;
+
+<h3>Edit Unit</h3>
+<section class="">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-6">
+                <EditForm Model="uniteModel" OnValidSubmit="HandleSubmit">
+                    <SfTextBox Readonly=@isReadOnly CssClass="e-outline" Placeholder="İsim"
+                               FloatLabelType="@FloatLabelType.Auto" Required="true"
+                    @bind-Value="uniteModel.Isim" />
+                    <SfNumericTextBox Readonly=@isReadOnly CssClass="e-outline" Placeholder="Koşul No"
+                               FloatLabelType="@FloatLabelType.Auto"
+                    @bind-Value="uniteModel.KosulNo" />
+                    <hr />
+                    <SfButton hidden=@isReadOnly CssClass="e-success" IconCss="e-icons e-save" Content="Kaydet" istype="submit" />
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+    [Parameter]
+    public bool isReadOnly { get; set; }
+
+    public UniteModel uniteModel { get; set; } = new UniteModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // DeleteDeneme(128, "umb0fiif.sma.jpg"); silinecek resim bilgilerini elle verince çalıştı
+        if (Id == null)
+        {
+            navigationManager.NavigateTo("uniteler/new");
+        }
+        else
+        {
+            uniteModel = await uniteService.GetUniteById(Id.Value);
+        }
+    }
+    public async void HandleSubmit()
+    {
+        if (Id == null)
+        {
+            var unite = await uniteService.AddUnite(uniteModel);
+            navigationManager.NavigateTo("uniteler");
+        }
+        else
+        {
+            await uniteService.UpdateUnite(uniteModel);
+            navigationManager.NavigateTo("uniteler");
+        }
+    }
+}

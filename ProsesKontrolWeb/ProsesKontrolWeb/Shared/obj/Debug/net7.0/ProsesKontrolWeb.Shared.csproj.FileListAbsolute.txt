@@ -1,0 +1,11 @@
+C:\Users\EXCALIBUR\source\repos\ProsesKontrolWeb\ProsesKontrolWeb\Shared\bin\Debug\net7.0\ProsesKontrolWeb.Shared.deps.json
+C:\Users\EXCALIBUR\source\repos\ProsesKontrolWeb\ProsesKontrolWeb\Shared\bin\Debug\net7.0\ProsesKontrolWeb.Shared.dll
+C:\Users\EXCALIBUR\source\repos\ProsesKontrolWeb\ProsesKontrolWeb\Shared\bin\Debug\net7.0\ProsesKontrolWeb.Shared.pdb
+C:\Users\EXCALIBUR\source\repos\ProsesKontrolWeb\ProsesKontrolWeb\Shared\obj\Debug\net7.0\ProsesKontrolWeb.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\EXCALIBUR\source\repos\ProsesKontrolWeb\ProsesKontrolWeb\Shared\obj\Debug\net7.0\ProsesKontrolWeb.Shared.AssemblyInfoInputs.cache
+C:\Users\EXCALIBUR\source\repos\ProsesKontrolWeb\ProsesKontrolWeb\Shared\obj\Debug\net7.0\ProsesKontrolWeb.Shared.AssemblyInfo.cs
+C:\Users\EXCALIBUR\source\repos\ProsesKontrolWeb\ProsesKontrolWeb\Shared\obj\Debug\net7.0\ProsesKontrolWeb.Shared.csproj.CoreCompileInputs.cache
+C:\Users\EXCALIBUR\source\repos\ProsesKontrolWeb\ProsesKontrolWeb\Shared\obj\Debug\net7.0\ProsesKontrolWeb.Shared.dll
+C:\Users\EXCALIBUR\source\repos\ProsesKontrolWeb\ProsesKontrolWeb\Shared\obj\Debug\net7.0\refint\ProsesKontrolWeb.Shared.dll
+C:\Users\EXCALIBUR\source\repos\ProsesKontrolWeb\ProsesKontrolWeb\Shared\obj\Debug\net7.0\ProsesKontrolWeb.Shared.pdb
+C:\Users\EXCALIBUR\source\repos\ProsesKontrolWeb\ProsesKontrolWeb\Shared\obj\Debug\net7.0\ref\ProsesKontrolWeb.Shared.dll

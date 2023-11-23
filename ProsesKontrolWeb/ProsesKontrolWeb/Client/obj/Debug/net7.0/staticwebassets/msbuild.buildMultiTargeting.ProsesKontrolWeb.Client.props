@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\ProsesKontrolWeb.Client.props" />
+</Project>

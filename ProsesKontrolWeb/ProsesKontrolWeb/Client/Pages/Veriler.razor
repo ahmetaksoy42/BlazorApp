@@ -1,0 +1,181 @@
+﻿@page "/"
+@page "/veriler"
+@inject HttpClient Http;
+@inject IProsesKontrolService ProsesKontrolService
+@inject IImageService imageService
+@inject NavigationManager navigationManager
+@inject IJSRuntime JsRuntime
+@using Microsoft.AspNetCore
+
+<h3>Veriler</h3>
+<SfGrid DataSource="@GridData" AllowFiltering="true">
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.CheckBox"></GridFilterSettings>
+    <GridEvents RowDeselecting="@(()=> buttonDisabled=true)" RowSelecting="@(()=> buttonDisabled=false)" TValue="ProsesKontrolModel" OnRecordClick="RowClickHandler"></GridEvents>
+
+    <SfToolbar CssClass="e-toolbar-center">
+        <ToolbarItems>
+            @*   <ToolbarItem Disabled="@buttonDisabled" TooltipText="Ekle" PrefixIcon="e-icons e-circle-add" OnClick="@(() => navigationManager.NavigateTo("veriler/new"))"
+            style="color:yellow; "></ToolbarItem>
+            <ToolbarItem Disabled="@buttonDisabled" TooltipText="İncele" PrefixIcon="e-icons e-protect-workbook" OnClick="@(()=>ReadOnlyProses(true, selectedUniteId))"
+            style="color:brown;"></ToolbarItem>
+            <ToolbarItem Disabled="@buttonDisabled" TooltipText="Düzenle" PrefixIcon="e-icons e-edit" OnClick="@(()=>EditProses(selectedUniteId))"
+            style="color:blue;"></ToolbarItem>
+            <ToolbarItem Disabled="@buttonDisabled" TooltipText="Sil" PrefixIcon="e-icons e-delete" OnClick="@(()=>ShowDeleteMessage(selectedUniteId))"
+            style="color:red;"></ToolbarItem> *@
+            @* <ToolbarItem TooltipText="Ekle">
+            <Template>
+
+            </Template>
+            </ToolbarItem> *@
+            <SfTooltip Content="Ekle">
+                <SfButton IconCss="e-icons e-circle-add" CssClass="e-success e-toolbar-item" OnClick="@(() => navigationManager.NavigateTo("veriler/new"))"
+                          style="width: 40px; height:30px; margin-right: 10px; color:greenyellow;Background:black;"></SfButton>
+            </SfTooltip>
+
+            <SfTooltip Content="İncele">
+                <SfButton Disabled="@buttonDisabled" CssClass="e-warning e-toolbar-item" IconCss="e-icons e-protect-workbook"
+                          OnClick="@(()=>ReadOnlyProses(true, selectedUniteId))"
+                          style="width: 40px; height:20px; margin-right: 10px; color:orange;Background:black;"></SfButton>
+            </SfTooltip>
+
+            <SfTooltip Content="Düzenle">
+                <SfButton Disabled="@buttonDisabled" CssClass="e-info e-toolbar-item" IconCss="e-icons e-edit"
+                          OnClick="@(()=>EditProses(selectedUniteId))"
+                          style="width: 40px; height:20px;margin-right: 10px; color:blue;Background:black;"></SfButton>
+            </SfTooltip>
+
+            <SfTooltip Content="Sil">
+                <SfButton Disabled="@buttonDisabled" CssClass="e-danger e-toolbar-item" IconCss="e-icons e-delete"
+                          OnClick="@(()=>ShowDeleteMessage(selectedUniteId))"
+                          style="width: 40px; height:20px;margin-right: 10px; color:red;Background:black;"></SfButton>
+            </SfTooltip>
+
+        </ToolbarItems>
+    </SfToolbar>
+
+    <GridColumns>
+        <GridColumn Context="context" HeaderText="Thumbnail" TextAlign="TextAlign.Center" Width="120">
+            <Template>
+                @{
+                    var proses = (context as ProsesKontrolModel);
+                    if (thumbnails.Count > 0)
+                    {
+                        string bs64 = "";
+                        try
+                        {
+                            bs64 = thumbnails[proses.Id];
+                        }
+                        catch (Exception)
+                        {
+
+                        }
+                        if (bs64 != null)
+                        {
+                            <div class="col">
+                                <img src="data:contentType;base64,@bs64" style="max-height:50px;max-width:50px;height:auto; width:auto;" />
+                            </div>
+                        }
+                    }
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Field="HataTipi" HeaderText="Hata Tipi" ClipMode="ClipMode.EllipsisWithTooltip"></GridColumn>
+        <GridColumn Field="Standart" HeaderText="Standart (Referans Noktası)" ClipMode="ClipMode.EllipsisWithTooltip"></GridColumn>
+        <GridColumn Field="KontrolMetodu" HeaderText="Kontrol Metodu"></GridColumn>
+        <GridColumn DisplayAsCheckBox="true" Field="@nameof(ProsesKontrolModel.Operator)" HeaderText="Operator" Width="120"></GridColumn>
+        <GridColumn Field="OperatorKontrol" HeaderText=""></GridColumn>
+        <GridColumn DisplayAsCheckBox="true" Field="ProsesKontrolSorumlusu" HeaderText="Proses Kontrol Sorumlusu" ClipMode="ClipMode.EllipsisWithTooltip" Width="100"></GridColumn>
+        <GridColumn Field="ProsesSorumlusuKontrol" HeaderText=""></GridColumn>
+    </GridColumns>
+</SfGrid>
+
+
+@* <style>
+    .e-grid .e-headercell:hover .e-headercelldiv {
+        overflow: visible;
+        white-space: normal;
+    }
+</style> *@
+@* <p>
+    <SfButton style="font-size:15px" IsPrimary="true" CssClass="e-success" Content="Veri Ekle" OnClick="@(() => navigationManager.NavigateTo("veriler/new"))"></SfButton>
+</p> *@
+
+@code {
+    private Dictionary<int, string> thumbnails = new Dictionary<int, string>();
+    public List<ProsesKontrolModel> GridData { get; set; } = new List<ProsesKontrolModel>();
+    public bool isReadOnly { get; set; } = false;
+    public string thumbnailPath;
+    private int selectedUniteId;
+    private bool buttonDisabled = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        GridData = await ProsesKontrolService.GetProsesKontrolModels();
+        foreach (var proses in GridData)
+        {
+            GetThumbnail(1, proses.Id);
+        }
+
+        StateHasChanged();
+    }
+    public async void OnRowSelected(RowSelectingEventArgs<ProsesKontrolModel> args)
+    {
+        buttonDisabled = false;
+        if (args.Cancel)
+        {
+            buttonDisabled = true;
+        }
+    }
+    public async void GetThumbnail(int tableId, int tableInsideId)
+    {
+        List<string>? datas = new();
+        //List<string> thumbnailNames = new();
+        datas = await imageService.GetThumbnailData(tableId, tableInsideId);
+        if (datas.Count > 0)
+        {
+            thumbnails.Add(tableInsideId, datas[0]);
+        }
+        StateHasChanged();
+    }
+    public async void ShowDeleteMessage(int id)
+    {
+        if (id == 0)
+        {
+            return;
+        }
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Seçili satırı silmek istediğinize emin misiniz ?"); // Confirm
+
+        if (confirmed)
+        {
+            await DeleteProsesKontrol(id);
+        }
+    }
+    async Task DeleteProsesKontrol(int id)
+    {
+        await ProsesKontrolService.DeleteProses(id);
+        await imageService.DeleteImageById(1, id);
+        GridData = await ProsesKontrolService.GetProsesKontrolModels(); // Grid güncellenmeme sorunu
+        StateHasChanged();
+    }
+    public async void EditProses(int id)
+    {
+        if (id == 0)
+        {
+            return;
+        }
+        navigationManager.NavigateTo($"veriler/edit/{id}");
+    }
+    public async void ReadOnlyProses(bool isReadOnly, int id)
+    {
+        if (id == 0)
+        {
+            return;
+        }
+        navigationManager.NavigateTo($"veriler/{isReadOnly}/{id}");
+    }
+    private void RowClickHandler(RecordClickEventArgs<ProsesKontrolModel> args)
+    {
+        selectedUniteId = args.RowData.Id;
+    }
+}
+

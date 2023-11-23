@@ -1,0 +1,83 @@
+﻿@page "/prosesler/new"
+@page "/prosesler/edit/{id:int}"
+@page "/prosesler/{isReadOnly:bool}/{id:int}"
+@inject HttpClient Http
+@inject NavigationManager navigationManager;
+@inject IProsesService prosesService;
+@inject IUniteService uniteService;
+
+
+<h3>EditProses</h3>
+<section class="">
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-6">
+                <EditForm Model="prosesModel" OnValidSubmit="HandleSubmit">
+                    <SfComboBox Readonly=@isReadOnly TItem="UniteModel" @bind-Value="@prosesModel.UniteModelId" TValue="int?" Placeholder="Unite Seç"
+                                DataSource="@uniteModels" FloatLabelType="FloatLabelType.Always"
+                                AllowCustom="false" Required="true">
+
+                        <ComboBoxFieldSettings Text="Isim" Value="Id" />
+                    </SfComboBox>
+
+                    <SfTextBox Readonly=@isReadOnly CssClass="e-outline" Placeholder="İsim"
+                               FloatLabelType="@FloatLabelType.Auto" Required="true"
+                    @bind-Value="prosesModel.Isim" />
+                    <SfTextBox Readonly=@isReadOnly CssClass="e-outline" Placeholder="Açıklama"
+                               FloatLabelType="@FloatLabelType.Auto"
+                    @bind-Value="prosesModel.Aciklama" />
+                    <SfTextBox Readonly=@isReadOnly CssClass="e-outline" Placeholder="Birim"
+                               FloatLabelType="@FloatLabelType.Auto"
+                    @bind-Value="prosesModel.Birim" />
+                    <SfTimePicker Readonly=@isReadOnly CssClass="e-outline" Placeholder="Kalıp Ayar Süresi"
+                                  FloatLabelType="@FloatLabelType.Auto"
+                    @bind-Value="prosesModel.KalipAyarSuresi" />
+                    <SfTimePicker Readonly=@isReadOnly CssClass="e-outline" Placeholder="İş Süresi"
+                                  FloatLabelType="@FloatLabelType.Auto"
+                    @bind-Value="prosesModel.IsSuresi" />
+                    <SfNumericTextBox Readonly=@isReadOnly CssClass="e-outline" Placeholder="Saatlik Üretim Miktarı"
+                                      FloatLabelType="@FloatLabelType.Auto"
+                    @bind-Value="prosesModel.SaatlikUretimMiktari" />
+                    <hr />
+                    <SfButton hidden=@isReadOnly CssClass="e-success" IconCss="e-icons e-save" Content="Kaydet" istype="submit" />
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+    [Parameter]
+    public bool isReadOnly { get; set; }
+
+    public ProsesModel prosesModel { get; set; } = new ProsesModel();
+    public List<UniteModel> uniteModels { get; set; } = new List<UniteModel>();
+    protected override async Task OnInitializedAsync()
+    {
+        uniteModels = await uniteService.GetAllUniteModels();
+        if (Id == null)
+        {
+            navigationManager.NavigateTo("prosesler/new");
+        }
+        else
+        {
+            prosesModel = await prosesService.GetProsesById(Id.Value);
+        }
+    }
+    public async void HandleSubmit()
+    {
+        if (Id == null)
+        {
+            var proses = await prosesService.AddProses(prosesModel);
+            navigationManager.NavigateTo("prosesler");
+        }
+        else
+        {
+            await prosesService.UpdateProses(prosesModel);
+            navigationManager.NavigateTo("prosesler");
+        }
+    }
+}

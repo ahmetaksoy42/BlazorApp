@@ -1,0 +1,43 @@
+﻿@page "/veriekle"
+@inject HttpClient Http
+@inject NavigationManager navigationManager;
+@inject IProsesKontrolService prosesKontrolService
+@inject IImageService imageService;
+@inject IProsesService prosesService;
+@inject IJSRuntime JsRuntime
+@using Syncfusion.Blazor.Buttons
+@using System.Net.Http.Headers
+@using Syncfusion.Blazor.DropDowns
+
+
+
+<SfDropDownList TValue="string" TItem="Games" Placeholder="Proses Seç" DataSource="@LocalData">
+    <DropDownListFieldSettings Text="Text" Value="ID" />
+</SfDropDownList>
+
+<SfComboBox TValue="string" TItem="Games" Placeholder="Select a game" DataSource="@LocalData">
+    <ComboBoxFieldSettings Value="ID" Text="Text"></ComboBoxFieldSettings>
+</SfComboBox>
+<SfDatePicker TValue="DateTime"></SfDatePicker>
+
+
+@code {
+    public class Games
+    {
+        public string ID { get; set; }
+        public string Text { get; set; }
+    }
+
+    List<Games> LocalData = new List<Games> {
+    new Games() { ID= "Game1", Text= "American Football" },
+    new Games() { ID= "Game2", Text= "Badminton" },
+    new Games() { ID= "Game3", Text= "Basketball" },
+    new Games() { ID= "Game4", Text= "Cricket" },
+    new Games() { ID= "Game5", Text= "Football" },
+    new Games() { ID= "Game6", Text= "Golf" },
+    new Games() { ID= "Game7", Text= "Hockey" },
+    new Games() { ID= "Game8", Text= "Rugby"},
+    new Games() { ID= "Game9", Text= "Snooker" },
+    new Games() { ID= "Game10", Text= "Tennis"},
+  };
+}

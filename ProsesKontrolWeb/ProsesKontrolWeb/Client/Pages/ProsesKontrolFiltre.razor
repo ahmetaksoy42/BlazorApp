@@ -1,0 +1,105 @@
+﻿@page "/filtreliveriler"
+@inject HttpClient Http;
+@inject IProsesKontrolService ProsesKontrolService
+@inject IProsesService prosesService;
+@inject IImageService imageService
+@inject NavigationManager navigationManager
+@using Microsoft.AspNetCore
+
+<h3>Verileri Filtrele</h3>
+<div class="col-5" style="margin-bottom:20px">
+    <SfComboBox TItem="ProsesModel" TValue="int?" Placeholder="Proses Seç" PopupHeight="350px" PopupWidth="350px"
+                DataSource="@prosesModels" FloatLabelType="FloatLabelType.Always">
+        <ComboBoxFieldSettings Text="Isim" Value="Id" />
+        <ComboBoxEvents TValue="int?" TItem="ProsesModel" ValueChange="OnProsesValueChanged"></ComboBoxEvents>
+    </SfComboBox>
+</div>
+<SfGrid hidden ="@gridHidden" DataSource="@GridData" AllowFiltering="true" Toolbar="@(new List<string>() { "Search" })">
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.CheckBox"></GridFilterSettings>
+    <GridColumns>
+        <GridColumn Context="context" HeaderText="Thumbnail" TextAlign="TextAlign.Center" Width="120">
+            <Template>
+                @{
+                    var proses = (context as ProsesKontrolModel);
+                    if (thumbnails.Count > 0)
+                    {
+                        string bs64 = "";
+                        try
+                        {
+                            bs64 = thumbnails[proses.Id];
+                        }
+                        catch (Exception)
+                        {
+                        }
+                        if (bs64 != null)
+                        {
+                            <div class="col">
+                                <img src="data:contentType;base64,@bs64" style="max-height:50px;max-width:50px;height:auto; width:auto;" />
+                            </div>
+                        }
+                    }
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Field="HataTipi" HeaderText="Hata Tipi"></GridColumn>
+        <GridColumn Field="Standart" HeaderText="Standart (Referans Noktası)" ClipMode="ClipMode.EllipsisWithTooltip"></GridColumn>
+        <GridColumn Field="KontrolMetodu" HeaderText="Kontrol Metodu"></GridColumn>
+        <GridColumn DisplayAsCheckBox="true" Field="@nameof(ProsesKontrolModel.Operator)" HeaderText="Operator" Width="120"></GridColumn>
+        <GridColumn Field="OperatorKontrol" HeaderText=""></GridColumn>
+        <GridColumn DisplayAsCheckBox="true" Field="ProsesKontrolSorumlusu" HeaderText="Proses Kontrol Sorumlusu" Width="100" ClipMode="ClipMode.EllipsisWithTooltip"></GridColumn>
+        <GridColumn Field="ProsesSorumlusuKontrol" HeaderText=""></GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    public List<ProsesModel> prosesModels { get; set; } = new List<ProsesModel>();
+    private Dictionary<int, string> thumbnails = new Dictionary<int, string>();
+    public List<ProsesKontrolModel> GridData { get; set; } = new List<ProsesKontrolModel>();
+    public bool isReadOnly { get; set; } = false;
+    public string thumbnailPath;
+    private bool gridHidden = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        prosesModels = await prosesService.GetAllProsesModels();
+        //GridData = await ProsesKontrolService.GetProsesKontrolModels(); başlangıçta boş olması için ama bu sefer de thumbnailler yüklenmiyor
+        GridData = await ProsesKontrolService.GetProsesKontrolModels();
+        foreach (var proses in GridData)
+        {
+            GetThumbnail(1, proses.Id);
+        }
+    }
+
+    public async void OnProsesValueChanged(ChangeEventArgs<int?, ProsesModel> args)
+    {
+        GridData = await ProsesKontrolService.GetProsesKontrolModelsByProsesId(args.Value);
+        gridHidden = false;
+        StateHasChanged();
+    }
+    public async void GetThumbnail(int tableId, int tableInsideId)
+    {
+        List<string>? datas = new();
+        //List<string> thumbnailNames = new();
+        datas = await imageService.GetThumbnailData(tableId, tableInsideId);
+        if (datas.Count > 0)
+        {
+            thumbnails.Add(tableInsideId, datas[0]);
+        }
+        StateHasChanged();
+    }
+    async Task DeleteProsess(int id)
+    {
+        await ProsesKontrolService.DeleteProses(id);
+        await imageService.DeleteImageById(1, id);
+        GridData = await ProsesKontrolService.GetProsesKontrolModels(); // Grid güncellenmeme sorunu
+    }
+    public void EditProses(int id)
+    {
+        navigationManager.NavigateTo($"veriler/edit/{id}");
+    }
+    public void ReadOnlyProses(bool isReadOnly, int id)
+    {
+        navigationManager.NavigateTo($"veriler/{isReadOnly}/{id}");
+    }
+}
+

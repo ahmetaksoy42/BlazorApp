@@ -1,0 +1,137 @@
+﻿@page "/uniteler"
+@inject HttpClient Http;
+@inject IProsesService prosesService
+@inject IUniteService unitService
+@inject NavigationManager navigationManager
+@inject IJSRuntime JsRuntime
+
+<h3>Uniteler</h3>
+<SfGrid DataSource="@GridData" AllowSelection="true" AllowFiltering="true" Toolbar="@(new List<string>() {"Search"})">
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.CheckBox"></GridFilterSettings>
+    <GridEvents RowDeselecting="@(()=> buttonDisabled=true)" RowSelecting="@(()=> buttonDisabled=false)" TValue="UniteModel" OnRecordClick="RowClickHandler"></GridEvents>
+    <SfToolbar CssClass="e-toolbar-center">
+        <ToolbarItems>
+
+            <ToolbarItem TooltipText="Ekle">
+                <Template>
+                    <SfButton CssClass="e-inherit e-toolbar-item" IconCss="e-icons e-circle-add" OnClick="@(() => navigationManager.NavigateTo("uniteler/new"))"
+                              style="width: 40px; color:greenyellow;">
+                    </SfButton>
+                </Template>
+            </ToolbarItem>
+
+            <ToolbarItem TooltipText="İncele">
+                 <Template>
+                     <SfButton Disabled="@buttonDisabled" CssClass="e-inherit e-toolbar-item" IconCss="e-icons e-protect-workbook"
+                      OnClick="@(()=>ReadOnlyUnite(true, selectedUniteId))"
+                      style="width: 40px; color:orange">
+            </SfButton>
+                </Template>
+            </ToolbarItem>
+
+            <ToolbarItem TooltipText="Düzenle">
+                <Template>
+                    <SfButton Disabled="@buttonDisabled" CssClass="e-inherit e-toolbar-item" IconCss="e-icons e-edit"
+                              OnClick="@(()=>EditUnite(selectedUniteId))"
+                              style="width: 40px; color:blue">
+                    </SfButton>
+                </Template>
+            </ToolbarItem>
+
+            <ToolbarItem TooltipText="Sil">
+                <Template>
+                    <SfButton Disabled="@buttonDisabled" CssClass="e-inherit e-toolbar-item" IconCss="e-icons e-delete"
+                              OnClick="@(()=>ShowDeleteMessage(selectedUniteId))"
+                              style="width: 40px; color:red">
+                    </SfButton>
+                </Template>
+            </ToolbarItem>
+
+        </ToolbarItems>
+
+        @* <SfTooltip Content="Ekle">
+            <SfButton CssClass="e-inherit" IconCss="e-icons e-circle-add" OnClick="@(() => navigationManager.NavigateTo("uniteler/new"))"
+                      style="width: 40px; margin-right: 10px; color:greenyellow;">
+            </SfButton>
+        </SfTooltip>
+        <SfTooltip Content="İncele">
+            <SfButton Disabled="@buttonDisabled" CssClass="e-inherit e-toolbar-item" IconCss="e-icons e-protect-workbook"
+                      OnClick="@(()=>ReadOnlyUnite(true, selectedUniteId))"
+                      style="width: 40px; margin-right: 10px;  color:orange">
+            </SfButton>
+        </SfTooltip>
+        <SfTooltip Content="Düzenle">
+            <SfButton Disabled="@buttonDisabled" CssClass="e-inherit e-toolbar-item" IconCss="e-icons e-edit"
+                      OnClick="@(()=>EditUnite(selectedUniteId))"
+                      style="width: 40px; margin-right: 10px; color:blue">
+            </SfButton>
+        </SfTooltip>
+        <SfTooltip Content="Sil">
+            <SfButton Disabled="@buttonDisabled" CssClass="e-inherit e-toolbar-item" IconCss="e-icons e-delete"
+                      OnClick="@(()=>ShowDeleteMessage(selectedUniteId))"
+                      style="width: 40px;margin-right: 10px; color:red">
+            </SfButton>
+        </SfTooltip> *@
+
+    </SfToolbar>
+    <GridColumns>
+        <GridColumn Field="Isim" HeaderText="İsim"></GridColumn>
+        <GridColumn Field="KosulNo" HeaderText="Koşul No"></GridColumn>
+    </GridColumns>
+</SfGrid>
+<div style="margin-top:10px"></div>
+@* <p>
+    <SfButton IsPrimary="true" Content="Unite Ekle" OnClick="@(() => navigationManager.NavigateTo("uniteler/new"))"></SfButton>
+</p> *@
+@code {
+    public UniteModel uniteModel;
+    public List<UniteModel> GridData { get; set; } = new List<UniteModel>();
+    public bool isReadOnly { get; set; } = false;
+    private int selectedUniteId;
+    private bool buttonDisabled = true;
+
+    protected async override Task OnInitializedAsync()
+    {
+        GridData = await unitService.GetAllUniteModels();
+    }
+    private void RowClickHandler(RecordClickEventArgs<UniteModel> args)
+    {
+        selectedUniteId = args.RowData.Id;
+
+    }
+    public async void EditUnite(int id)
+    {
+        if (id == 0)
+        {
+            return;
+        }
+        navigationManager.NavigateTo($"uniteler/edit/{id}");
+    }
+    public async void ShowDeleteMessage(int id)
+    {
+        if (id == 0)
+        {
+            return;
+        }
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Seçili satırı silmek istediğinize emin misiniz ?"); // Confirm
+
+        if (confirmed)
+        {
+            DeleteUnite(id);
+        }
+    }
+    public async void DeleteUnite(int id)
+    {
+        await unitService.DeleteUnite(id);
+        GridData = await unitService.GetAllUniteModels();
+        StateHasChanged();
+    }
+    public async void ReadOnlyUnite(bool isReadOnly, int id)
+    {
+        if (id == 0)
+        {
+            return;
+        }
+        navigationManager.NavigateTo($"uniteler/{isReadOnly}/{id}");
+    }
+}
